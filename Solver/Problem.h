@@ -36,8 +36,8 @@ public:
             if (!ofs.is_open()) { return false; }
 
             // TODO[0]: fill the submission information.
-            submission.set_author("qym");
-            submission.set_algorithm("rand");
+            submission.set_author("szx");
+            submission.set_algorithm("mp");
             submission.set_cpu("Intel Core i5-7400 3.00GHz");
             submission.set_ram("16G 2400MHz");
             submission.set_language("C++");

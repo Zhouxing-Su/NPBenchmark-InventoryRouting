@@ -198,6 +198,8 @@ public:
 protected:
     void init();
     bool optimize(Solution &sln, ID workerId = 0); // optimize by a single worker.
+
+    void iteratedModel(Solution &sln);
     #pragma endregion Method
 
     #pragma region Field
@@ -207,6 +209,7 @@ public:
 
     struct { // auxiliary data for solver.
         Arr2D<Price> routingCost; // routingCost[i, j] is the routing cost from node i to j.
+        //Arr2D<Quantity> cumulativeDemand; // cumulativeDemand[n, p] is the 
     } aux;
 
     Environment env;

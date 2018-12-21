@@ -11,6 +11,7 @@
 #include <cmath>
 
 #include "CsvReader.h"
+#include "MpSolver.h"
 
 
 using namespace std;
@@ -298,58 +299,57 @@ void Solver::init() {
 bool Solver::optimize(Solution &sln, ID workerId) {
     Log(LogSwitch::Szx::Framework) << "worker " << workerId << " starts." << endl;
 
+    sln.totalCost = 0;
+    for (auto i = input.nodes().begin(); i != input.nodes().end(); ++i) {
+        sln.totalCost += i->holdingcost() * i->initquantity();
+    }
+
+    iteratedModel(sln);
+        
+    Log(LogSwitch::Szx::Framework) << "worker " << workerId << " ends." << endl;
+    return true;
+}
+
+void Solver::iteratedModel(Solution &sln) {
     ID nodeNum = input.nodes_size();
     ID vehicleNum = input.vehicles_size();
     const auto &vehicles(*input.mutable_vehicles());
     const auto &nodes(*input.mutable_nodes());
 
-    // reset solution state.
-    bool status = true;
+    MpSolver mp;
 
-    sln.totalCost = 0;
-    List<Quantity> restQuantity(nodeNum, 0);
-    ID n = 0;
-    for (auto i = input.nodes().begin(); i != input.nodes().end(); ++i, ++n) {
-        restQuantity[n] = i->initquantity();
-        sln.totalCost += i->holdingcost() * restQuantity[n];
-    }
-
-    // TODO[0]: replace the following random assignment with your own algorithm.
     for (ID p = 0; p < input.periodnum(); ++p) {
         auto &periodRoute(*sln.add_periodroutes());
-        for (auto v = vehicles.begin(); v != vehicles.end(); ++v) {
-            auto &route(*periodRoute.add_vehicleroutes());
+        //for (auto v = vehicles.begin(); v != vehicles.end(); ++v) {
+        //    auto &route(*periodRoute.add_vehicleroutes());
 
-            int visitedCustomerNum = rand.pick(nodeNum);
-            if (visitedCustomerNum <= 0) { continue; }
-            int totalQuantity = 0;
-            int prevNode = 0;
-            for (int i = 0; i < visitedCustomerNum; ++i) {
-                auto &delivery(*route.add_deliveries());
-                delivery.set_node(rand.pick(input.depotnum(), nodeNum)); // may violate single visit constraint.
-                delivery.set_quantity(rand.pick(v->capacity() + 1)); // may violate vehicle/node capacity constraint.
-                totalQuantity += delivery.quantity();
-                restQuantity[delivery.node()] += delivery.quantity();
-                sln.totalCost += aux.routingCost[prevNode][delivery.node()];
-                prevNode = delivery.node();
-            }
+        //    int visitedCustomerNum = rand.pick(nodeNum);
+        //    if (visitedCustomerNum <= 0) { continue; }
+        //    int totalQuantity = 0;
+        //    int prevNode = 0;
+        //    for (int i = 0; i < visitedCustomerNum; ++i) {
+        //        auto &delivery(*route.add_deliveries());
+        //        delivery.set_node(rand.pick(input.depotnum(), nodeNum)); // may violate single visit constraint.
+        //        delivery.set_quantity(rand.pick(v->capacity() + 1)); // may violate vehicle/node capacity constraint.
+        //        totalQuantity += delivery.quantity();
+        //        restQuantity[delivery.node()] += delivery.quantity();
+        //        sln.totalCost += aux.routingCost[prevNode][delivery.node()];
+        //        prevNode = delivery.node();
+        //    }
 
-            // the depot should be the destination of the tour.
-            auto &delivery(*route.add_deliveries());
-            delivery.set_node(0);
-            delivery.set_quantity(-totalQuantity);
-            restQuantity[0] += delivery.quantity();
-            sln.totalCost += aux.routingCost[prevNode][0];
-        }
-        ID n = 0;
-        for (auto i = nodes.begin(); i != nodes.end(); ++i, ++n) {
-            restQuantity[n] -= i->demands(p);
-            sln.totalCost += restQuantity[n] * i->holdingcost();
-        }
+        //    // the depot should be the destination of the tour.
+        //    auto &delivery(*route.add_deliveries());
+        //    delivery.set_node(0);
+        //    delivery.set_quantity(-totalQuantity);
+        //    restQuantity[0] += delivery.quantity();
+        //    sln.totalCost += aux.routingCost[prevNode][0];
+        //}
+        //ID n = 0;
+        //for (auto i = nodes.begin(); i != nodes.end(); ++i, ++n) {
+        //    restQuantity[n] -= i->demands(p);
+        //    sln.totalCost += restQuantity[n] * i->holdingcost();
+        //}
     }
-        
-    Log(LogSwitch::Szx::Framework) << "worker " << workerId << " ends." << endl;
-    return status;
 }
 #pragma endregion Solver
 

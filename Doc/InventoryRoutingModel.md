@@ -150,12 +150,16 @@ all of the constraints in one of the following versions must be satisfied.
   \sum_{m \in N} x_{vmn} = \sum_{m \in N} x_{vnm}, \quad \forall v \in V, \forall n \in N
   $$
 
-- **HDC (delivery precondition)** the delivery only happens to the visited customers.
+- **HDP (delivery precondition)** the delivery only happens to the visited nodes.
   $$
   y_{vn} \le \textrm{C}(v, n) \cdot \sum_{m \in N} x_{vnm}, \quad \forall v \in V, \forall n \in N'
   $$
+  $$
+  - y_{vs} \le \textrm{C}(v, s) \cdot \sum_{n \in N'} x_{vsn}, \quad \forall v \in V
+  $$
 
-- **HTO (tour origin)** the tour of each vehicle begins from the supplier.
+- **HTO.O (tour origin)** the tour of each vehicle begins from the supplier.
+  it may cut off some solutions where no delivery happens at some periods.
   $$
   \sum_{n \in N'} x_{vsn} = 1, \quad \forall v \in V
   $$

@@ -15,7 +15,7 @@ MpSolverGurobi::MpSolverGurobi() : model(getGlobalEnv()), status(ResultStatus::R
 
 MpSolverGurobi::MpSolverGurobi(Configuration &config) : model(getGlobalEnv()), cfg(config),
     status(ResultStatus::Ready), timer(Timer::toMillisecond(config.timeoutInSecond)), subObjTimer(0ms) {
-    if (cfg.timeoutInSecond > Configuration::Forever) { setTimeLimitInSecond(cfg.timeoutInSecond); }
+    if (cfg.timeoutInSecond < Configuration::Forever) { setTimeLimitInSecond(cfg.timeoutInSecond); }
     setOutput(cfg.enableOutput);
 }
 

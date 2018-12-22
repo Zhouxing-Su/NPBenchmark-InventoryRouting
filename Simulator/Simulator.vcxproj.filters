@@ -99,4 +99,7 @@
       <Filter>Solver\MpSolver</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\arr.natvis" />
+  </ItemGroup>
 </Project>

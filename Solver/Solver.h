@@ -147,12 +147,14 @@ public:
         String visualizPath(const T &msg) const { return DefaultVisualizationDir() + friendlyInstName() + "." + localTime + "." + std::to_string(msg) + ".html"; }
         String friendlyInstName() const { // friendly to file system (without special char).
             auto pos = instPath.find_last_of('/');
-            return (pos == String::npos) ? instPath : instPath.substr(pos + 1);
+            String filename = (pos == String::npos) ? instPath : instPath.substr(pos + 1);
+            return filename.substr(0, filename.length() - 5); // drop ".json".
         }
         String friendlyLocalTime() const { // friendly to human.
             return localTime.substr(0, 4) + "-" + localTime.substr(4, 2) + "-" + localTime.substr(6, 2)
                 + "_" + localTime.substr(8, 2) + ":" + localTime.substr(10, 2) + ":" + localTime.substr(12, 2);
         }
+        double timeoutInSecond() const { return msTimeout / Timer::MillisecondsPerSecond; }
 
         // essential information.
         String instPath;
@@ -209,7 +211,6 @@ public:
 
     struct { // auxiliary data for solver.
         Arr2D<Price> routingCost; // routingCost[i, j] is the routing cost from node i to j.
-        //Arr2D<Quantity> cumulativeDemand; // cumulativeDemand[n, p] is the 
     } aux;
 
     Environment env;

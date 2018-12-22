@@ -124,10 +124,10 @@ int main(int argc, char *argv[]) {
     for (auto pr = periodRoutes.begin(); pr != periodRoutes.end(); ++pr) {
         for (auto vr = pr->vehicleroutes().begin(); vr != pr->vehicleroutes().end(); ++vr) {
             if (vr->deliveries_size() <= 1) { continue; }
-            int preNode = 0;
+            int prevNode = 0;
             for (auto dl = vr->deliveries().begin(); dl != vr->deliveries().end(); ++dl) {
-                routingCost += distance(nodes[preNode], nodes[dl->node()]);
-                preNode = dl->node();
+                routingCost += distance(nodes[prevNode], nodes[dl->node()]);
+                prevNode = dl->node();
             }
         }
     }

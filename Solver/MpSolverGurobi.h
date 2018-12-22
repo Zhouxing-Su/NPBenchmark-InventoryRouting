@@ -130,6 +130,8 @@ public:
 
     #pragma region Type
 public:
+    class MpEvent;
+
     using DecisionVar = GRBVar;
     using Constraint = GRBConstr;
     using LinearExpr = GRBLinExpr;
@@ -142,6 +144,8 @@ public:
     // after solving single objective during multi-objective optimization.
     // returns true if obj cut-off is already added.
     using OnOptimaFound = std::function<bool(MpSolverGurobi&, std::function<bool(void)>)>;
+    // on finding an MIP solution during optimization.
+    using OnMipSln = std::function<void(MpEvent&)>;
 
     struct Configuration {
         static constexpr InternalSolver DefaultSolver = InternalSolver::GurobiMip;
@@ -157,7 +161,7 @@ public:
         static constexpr bool DefaultMultiObjMode = true; // true for priority, false for weight.
         static constexpr bool EnableCallbackForEachObj = true; // allow preprocess/postprocess for each obj in priority mode.
 
-        static constexpr double Forever = -1;
+        static constexpr double Forever = MaxInt;
 
         Configuration(InternalSolver type = DefaultSolver, double timeoutInSec = Forever,
             bool usePriorityMode = Configuration::DefaultMultiObjMode, bool shouldEnableOutput = DefaultOutputState)
@@ -183,7 +187,35 @@ public:
         double timeoutInSecond; // this will overwrite total timeout if it is greater than 0.
         OnOptimaFound postprocess; // invoked after this sub-objective is solved in priority mode.
         OnSolveBegin preprocess; // invoked before this sub-objective begin solving in priority mode.
-    };  
+    };
+
+    class MpEvent : public GRBCallback {
+    protected:
+        friend MpSolverGurobi;
+
+        MpEvent(OnMipSln onMipSolutionFound = OnMipSln())
+            : onMipSln(onMipSolutionFound) {}
+
+    public:
+        using GRBCallback::addCut;
+        using GRBCallback::addLazy;
+        void stop() { abort(); }
+
+        double getValue(const DecisionVar &var) { return getSolution(var); }
+        double getRelaxedValue(const DecisionVar &var) { return getNodeRel(var); }
+        bool isTrue(const DecisionVar &var) { return (getValue(var) > 0.5); }
+
+        void setValue(DecisionVar &var, double value) { setSolution(var, value); }
+        //using GRBCallback::useSolution;
+
+        void callback() {
+            if (where == GRB_CB_MIPSOL) {
+                if (onMipSln) { onMipSln(*this); }
+            }
+        }
+
+        OnMipSln onMipSln;
+    };
     #pragma endregion Type
 
     #pragma region Constructor
@@ -237,8 +269,9 @@ public:
     Millisecond getDuration() const { return static_cast<Millisecond>(timer.elapsedSeconds() * MillisecondsPerSecond); }
 
     // decisions.
-    DecisionVar addVar(VariableType type, double lb, double ub, const String &name) { return model.addVar(lb, ub, 0, static_cast<char>(type), name); }
-    DecisionVar addVar(VariableType type, double lb = 0, double ub = 1.0) { return addVar(type, lb, ub, ""); }
+    DecisionVar addVar(VariableType type, double lb = 0, double ub = 1, double objCoef = 0, const String &name = "") {
+        return model.addVar(lb, ub, objCoef, static_cast<char>(type), name);
+    }
 
     double getValue(const LinearExpr &expr) const { return expr.getValue(); }
     double getValue(const DecisionVar &var) const { return var.get(GRB_DoubleAttr_X); }
@@ -246,14 +279,6 @@ public:
         setAltSolutionIndex(solutionIndex);
         return var.get(GRB_DoubleAttr_Xn);
     }
-
-    // [Tune] use the given value as the initial solution in MIP.
-    void setInitValue(DecisionVar &var, double value) { var.set(GRB_DoubleAttr_Start, value); }
-    // [Tune] guide the solver to prefer certain value on certain variable.
-    void setHintValue(DecisionVar &var, double value) { var.set(GRB_DoubleAttr_VarHintVal, value); }
-    void setHintPrioriy(DecisionVar &var, int priority) { var.set(GRB_IntAttr_VarHintPri, priority); }
-    // [Tune] guide the solver to prefer certain variable for branching.
-    void setBranchPriority(DecisionVar &var, int priority) { var.set(GRB_IntAttr_BranchPriority, priority); }
 
     using MpSolverBase::isTrue;
     bool isTrue(LinearExpr expr) const { return isTrue(getValue(expr)); }
@@ -322,10 +347,20 @@ public:
 
     void setOutput(bool enable = Configuration::DefaultOutputState) { model.set(GRB_IntParam_OutputFlag, enable); }
 
-    void setCallback(GRBCallback *callback) {
+    // the methods in MpSolver is invalid within the callback, only use the ones in MpEvent instead.
+    void setMipSlnEvent(OnMipSln onMipSln) {
         model.set(GRB_IntParam_LazyConstraints, 1);
-        model.setCallback(callback);
+        mpEvent.onMipSln = onMipSln;
+        model.setCallback(&mpEvent);
     }
+
+    // [Tune] use the given value as the initial solution in MIP.
+    void setInitValue(DecisionVar &var, double value) { var.set(GRB_DoubleAttr_Start, value); }
+    // [Tune] guide the solver to prefer certain value on certain variable.
+    void setHintValue(DecisionVar &var, double value) { var.set(GRB_DoubleAttr_VarHintVal, value); }
+    void setHintPrioriy(DecisionVar &var, int priority) { var.set(GRB_IntAttr_VarHintPri, priority); }
+    // [Tune] guide the solver to prefer certain variable for branching.
+    void setBranchPriority(DecisionVar &var, int priority) { var.set(GRB_IntAttr_BranchPriority, priority); }
 
     // [Tune] prefer finding good feasible solutions, proving optimality or improving bound.
     void setMipFocus(MipFocusMode mode) { model.set(GRB_IntParam_MIPFocus, mode); }
@@ -403,6 +438,7 @@ protected:
 
     // definition of the problem to solve.
     GRBModel model;
+    MpEvent mpEvent;
 
     Configuration cfg;
 

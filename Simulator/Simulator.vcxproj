@@ -193,6 +193,9 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Simulator.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\arr.natvis" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

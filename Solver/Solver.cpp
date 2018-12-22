@@ -496,7 +496,6 @@ void Solver::iteratedModel(Solution &sln) {
                             if (prev == n) { continue; }
                             if (!mp.isTrue(xpv.at(prev, n))) { continue; }
                             quantity = lround(mp.getValue(delivery[p][v][n]));
-                            if (quantity == 0) { continue; }
                             auto &d(*route.add_deliveries());
                             d.set_node(n);
                             d.set_quantity(quantity);

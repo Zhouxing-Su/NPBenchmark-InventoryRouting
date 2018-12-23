@@ -50,6 +50,8 @@ namespace szx {
 #define RESOLVED_CONCAT3(a, b, c, d)  VERBATIM_CONCAT3(a, b, c, d)
 
 
+#ifndef SMART_SZX_CPP_UTILIBS_ARR
+#define SMART_SZX_CPP_UTILIBS_ARR
 template<typename T, typename IndexType = int>
 class Arr {
 public:
@@ -274,6 +276,7 @@ protected:
     IndexType len2;
     IndexType len;
 };
+#endif // !SMART_SZX_CPP_UTILIBS_ARR
 
 
 class Random {

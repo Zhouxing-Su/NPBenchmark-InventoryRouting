@@ -36,14 +36,14 @@
 
 | Variable     | Description                                                | Type | Domain     | Remark                                                     |
 | -------------- | ------------------------------------------------------------ | ---- | ------------- | ------------------------------------------------------------ |
-| $y_{pvn}$ | deliver**y** quantit**y** for customer $n$ at period $p$ by vehicle $v$ | real | $[0, \textrm{C}(v, n)]$ | $n \in N'$ |
-| $y_{pvs}$ | deliver**y** quantit**y** for supplier $s$ at period $p$ by vehicle $v$ | real | $[-\textrm{C}(v, s), 0]$ | |
+| $q_{pvn}$ | delivery **q**uantity for customer $n$ at period $p$ by vehicle $v$ | real | $[0, \textrm{C}(v, n)]$ | $n \in N'$ |
+| $q_{pvs}$ | delivery **q**uantity for supplier $s$ at period $p$ by vehicle $v$ | real | $[-\textrm{C}(v, s), 0]$ | |
 
 ### Convention and Function
 
 - define function $\textrm{C}(v, n) = \min\{C_{n}, C_{v}\}$ to indicate the min capacity.
 - define function $\textrm{D}(p, n) = I_{tn} - I_{pn}, \forall t = p - 1$ to indicate the demand of node $n$ at period $p$.
-- define function $\textrm{y}(t, n) = \sum\limits_{v \in V} \sum\limits_{p = 1}^{t} y_{vpn}$ to indicate the cumulative delivery quantity to node $n$ until timepoint $t$.
+- define function $\textrm{y}(t, n) = \sum\limits_{v \in V} \sum\limits_{p = 1}^{t} q_{vpn}$ to indicate the cumulative delivery quantity to node $n$ until timepoint $t$.
 
 
 ## Objective
@@ -69,15 +69,15 @@ all of the following constraints must be satisfied.
 
 - **HQM (quantity matching)** the loaded and total delivered quantity of the same vehicle should be equal in each period.
   $$
-  \sum_{n \in N} y_{pvn} = 0, \quad \forall v \in V, \forall p \in P
+  \sum_{n \in N} q_{pvn} = 0, \quad \forall v \in V, \forall p \in P
   $$
 
 - **HMD.O (max delivery)** the delivered quantity should not exceed the node capacity in each period.
   $$
-  \sum_{v \in V} y_{pvn} \le C_{n}, \quad \forall n \in N, \forall p \in P
+  \sum_{v \in V} q_{pvn} \le C_{n}, \quad \forall n \in N, \forall p \in P
   $$
 
-- **HVC (vehicle capacity)** (already bounded by the domain of $y_{pvs}$) the carried inventory quantity should not exceed the vehicle capacity in any period.
+- **HVC (vehicle capacity)** (already bounded by the domain of $q_{pvs}$) the carried inventory quantity should not exceed the vehicle capacity in any period.
 
 - **SEQ.O (economic quantity)** the delivered quantity in each delivery should not be too small to reduce the number of delivery to reduce the routing cost.
 
@@ -114,7 +114,8 @@ since the routing for each period is independent, the dimension $p$ is omitted.
 | Constant | Description                    | Type | Range       | Remark |
 | -------- | ------------------------------ | ---- | ----------- | ------ |
 | $D_{nm}$ | **d**istance between node $n$ and $m$ | real |  | a.k.a. routing cost |
-| $D^{+}$ | the **d**istance upper bound of the route | real |  | obtained by minimum spanning tree or approximate algorithm |
+| $D^{+}$ | **d**istance upper bound of the route | real |  | obtained by minimum spanning tree or approximate algorithm |
+| $Q^{-}$ | min **q**uantity to deliver for each visited node | real |  |  |
 
 
 ## Decision
@@ -152,10 +153,15 @@ all of the constraints in one of the following versions must be satisfied.
 
 - **HDP (delivery precondition)** the delivery only happens to the visited nodes.
   $$
-  y_{vn} \le \textrm{C}(v, n) \cdot \sum_{m \in N} x_{vnm}, \quad \forall v \in V, \forall n \in N'
+  q_{vn} \le \textrm{C}(v, n) \cdot \sum_{m \in N} x_{vnm}, \quad \forall v \in V, \forall n \in N'
   $$
   $$
-  - y_{vs} \le \textrm{C}(v, s) \cdot \sum_{n \in N'} x_{vsn}, \quad \forall v \in V
+  - q_{vs} \le \textrm{C}(v, s) \cdot \sum_{n \in N'} x_{vsn}, \quad \forall v \in V
+  $$
+
+- **HVP.O (visit precondition)** the visit only happens to the customers with non-trivial delivery quantity.
+  $$
+  q_{vn} \ge Q^{-} \cdot \sum_{m \in N} x_{vnm}, \quad \forall v \in V, \forall n \in N'
   $$
 
 - **HTO.O (tour origin)** the tour of each vehicle begins from the supplier.

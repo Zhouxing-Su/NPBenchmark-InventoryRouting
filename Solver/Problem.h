@@ -24,8 +24,6 @@ namespace szx {
 class Problem {
     #pragma region Type
 public:
-    using Price = double;
-
     struct Input : public pb::InventoryRouting::Input {
         bool load(const String &path) { return pb::load(path, *this); }
     };
@@ -55,6 +53,8 @@ public:
 
     #pragma region Constant
 public:
+    static constexpr Price MaxCost = (1 << 30);
+    static constexpr double CheckerObjScale = 1000;
     #pragma endregion Constant
 
     #pragma region Constructor

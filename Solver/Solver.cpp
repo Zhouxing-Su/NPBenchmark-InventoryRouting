@@ -12,6 +12,7 @@
 
 #include "CsvReader.h"
 #include "MpSolver.h"
+#include "TspSolver.h"
 
 
 using namespace std;
@@ -215,15 +216,15 @@ void Solver::record() const {
         break;
     }
 
-    double obj = output.totalCost;
     double checkerObj = -1;
     bool feasible = check(checkerObj);
+    double objDiff = round(output.totalCost * Problem::CheckerObjScale - checkerObj) / Problem::CheckerObjScale;
 
     // record basic information.
     log << env.friendlyLocalTime() << ","
         << env.rid << ","
         << env.instPath << ","
-        << feasible << "," << (obj - checkerObj) << ","
+        << feasible << "," << objDiff << ","
         << output.totalCost << ","
         << bestObj << ","
         << refObj << ","
@@ -263,10 +264,9 @@ bool Solver::check(double &checkerObj) const {
         RunOutOfStockError = 0x10
     };
 
-    static constexpr double ObjScale = 1000;
     int errorCode = System::exec("Checker.exe " + env.instPath + " " + env.solutionPathWithTime());
     if (errorCode > 0) {
-        checkerObj = errorCode / ObjScale;
+        checkerObj = errorCode;
         return true;
     }
     errorCode = ~errorCode;
@@ -294,11 +294,17 @@ void Solver::init() {
             aux.routingCost[n][m] = aux.routingCost[m][n] = value;
         }
     }
+
+    aux.initHoldingCost = 0;
+    for (auto i = input.nodes().begin(); i != input.nodes().end(); ++i) {
+        aux.initHoldingCost += i->holdingcost() * i->initquantity();
+    }
 }
 
 bool Solver::optimize(Solution &sln, ID workerId) {
     Log(LogSwitch::Szx::Framework) << "worker " << workerId << " starts." << endl;
 
+    sln.init(input.periodnum(), input.vehicles_size(), Problem::MaxCost);
     iteratedModel(sln);
 
     Log(LogSwitch::Szx::Framework) << "worker " << workerId << " ends." << endl;
@@ -389,13 +395,42 @@ void Solver::iteratedModel(Solution &sln) {
                 Quantity capacity = min(input.vehicles(v).capacity(), input.nodes(n).capacity());
                 double quantityCoef = (n >= input.depotnum()) ? 1 : -1;
                 mp.addConstraint(quantityCoef * delivery[p][v][n] <= capacity * inDegree);
+                if (n >= input.depotnum()) {
+                    // visit precondition constraint.
+                    mp.addConstraint(delivery[p][v][n] >= inDegree); // OPTIMIZE[szx][2]: omit it since it will be satisfied automatically?
+                }
                 // maximal visit constraint.
                 mp.addConstraint(inDegree <= 1); // OPTIMIZE[szx][2]: omit it since it will be satisfied automatically?
             }
         }
     }
 
-    mp.setMipSlnEvent([&](MpSolver::MpEvent &e) {
+    // add objective.
+    Expr obj;
+    Expr holdingCost = aux.initHoldingCost;
+    for (ID n = 0; n < nodeNum; ++n) {
+        const auto &node(input.nodes(n));
+        for (ID p = 0; p < input.periodnum(); ++p) {
+            holdingCost += (node.holdingcost() * quantityLevel.at(n, p));
+        }
+    }
+    Expr routingCost;
+    for (ID p = 0; p < input.periodnum(); ++p) {
+        for (ID v = 0; v < vehicleNum; ++v) {
+            Arr2D<Dvar> &xpv(x.at(p, v));
+            for (ID n = 0; n < nodeNum; ++n) {
+                for (ID m = 0; m < nodeNum; ++m) {
+                    if (n == m) { continue; }
+                    routingCost += (aux.routingCost.at(n, m) * xpv.at(n, m));
+                }
+            }
+        }
+    }
+    obj = holdingCost + routingCost;
+    mp.addObjective(obj, MpSolver::OptimaOrientation::Minimize, 0, 0, 0, env.timeoutInSecond());
+
+    // add callbacks.
+    auto subTourHandler = [&](MpSolver::MpEvent &e) {
         enum EliminationPolicy { // OPTIMIZE[szx][0]: first sub-tour, best sub-tour or all sub-tours?
             NoSubTour = 0x0,
             AllSubTours = 0x1,
@@ -449,34 +484,73 @@ void Solver::iteratedModel(Solution &sln) {
                 }
             }
         }
-    });
+    };
 
-    // add objective.
-    Expr obj;
-    Expr holdingCost;
-    for (auto i = input.nodes().begin(); i != input.nodes().end(); ++i) {
-        holdingCost += i->holdingcost() * i->initquantity();
-    }
-    for (ID n = 0; n < nodeNum; ++n) {
-        const auto &node(input.nodes(n));
+    Solution curSln; // current solution.
+    curSln.init(input.periodnum(), vehicleNum);
+    auto nodeSetHandler = [&](MpSolver::MpEvent &e) {
+        //if (e.getObj() > sln.totalCost) { e.stop(); } // there could be bad heuristic solutions.
+
+        static constexpr double Precision = 1000;
+        lkh::CoordList2D coords; // OPTIMIZE[szx][3]: use adjacency matrix to avoid re-calculation and different rounding?
+        coords.reserve(nodeNum);
+        List<ID> pickedNodes(nodeNum);
+        lkh::Tour tour;
+        Expr nodeDiff;
+
+        curSln.totalCost = 0;
         for (ID p = 0; p < input.periodnum(); ++p) {
-            holdingCost += (node.holdingcost() * quantityLevel[n][p]);
-        }
-    }
-    Expr routingCost;
-    for (ID p = 0; p < input.periodnum(); ++p) {
-        for (ID v = 0; v < vehicleNum; ++v) {
-            Arr2D<Dvar> &xpv(x.at(p, v));
-            for (ID n = 0; n < nodeNum; ++n) {
-                for (ID m = 0; m < nodeNum; ++m) {
-                    if (n == m) { continue; }
-                    routingCost += (aux.routingCost.at(n, m) * xpv.at(n, m));
+            auto &periodRoute(*curSln.mutable_periodroutes(p));
+            for (ID v = 0; v < vehicleNum; ++v) {
+                Arr2D<Dvar> &xpv(x.at(p, v));
+                coords.clear();
+                for (ID n = 0; n < nodeNum; ++n) {
+                    bool visited = false;
+                    for (ID m = 0; m < nodeNum; ++m) {
+                        if (n == m) { continue; }
+                        if (!e.isTrue(xpv.at(n, m))) { continue; }
+                        pickedNodes[coords.size()] = n;
+                        coords.push_back(lkh::Coord2D(nodes[n].x() * Precision, nodes[n].y() * Precision));
+                        visited = true;
+                        break;
+                    }
+                    Expr degree;
+                    for (ID m = 0; m < n; ++m) { degree += xpv.at(n, m); }
+                    for (ID m = n + 1; m < nodeNum; ++m) { degree += xpv.at(n, m); }
+                    nodeDiff += (visited ? (1 - degree) : degree);
+                }
+                auto &route(*periodRoute.mutable_vehicleroutes(v));
+                route.clear_deliveries();
+                if (coords.size() > 2) {
+                    lkh::solveTsp(tour, coords); // repair the relaxed solution.
+                } else if (coords.size() == 2) { // trivial cases.
+                    tour.nodes.resize(2);
+                    tour.nodes[0] = 0;
+                    tour.nodes[1] = 1;
+                } else {
+                    continue;
+                }
+                tour.nodes.push_back(tour.nodes.front());
+                for (auto n = tour.nodes.begin(), m = n + 1; m != tour.nodes.end(); ++n, ++m) {
+                    ID nn = pickedNodes[*n];
+                    ID mm = pickedNodes[*m];
+                    auto &d(*route.add_deliveries());
+                    d.set_node(mm);
+                    d.set_quantity(lround(e.getValue(delivery[p][v][mm])));
+                    curSln.totalCost += aux.routingCost.at(nn, mm);
                 }
             }
         }
-    }
-    obj = holdingCost + routingCost;
-    mp.addObjective(obj, MpSolver::OptimaOrientation::Minimize, 0, 0, 0, env.timeoutInSecond());
+        e.addLazy(nodeDiff >= 1);
+
+        curSln.totalCost += e.getValue(holdingCost);
+        if (curSln.totalCost < sln.totalCost) {
+            Log(LogSwitch::Szx::Model) << "opt=" << curSln.totalCost << endl;
+            swap(curSln, sln);
+        }
+    };
+
+    mp.setMipSlnEvent(nodeSetHandler);
 
     // solve.
     if (mp.optimize()) {
@@ -484,21 +558,20 @@ void Solver::iteratedModel(Solution &sln) {
         sln.totalCost = obj.getValue();
 
         for (ID p = 0; p < input.periodnum(); ++p) {
-            auto &periodRoute(*sln.add_periodroutes());
+            auto &periodRoute(*sln.mutable_periodroutes(p));
             for (ID v = 0; v < vehicleNum; ++v) {
                 Arr2D<Dvar> &xpv(x.at(p, v));
-                auto &route(*periodRoute.add_vehicleroutes());
-                Quantity quantity;
+                auto &route(*periodRoute.mutable_vehicleroutes(v));
+                route.clear_deliveries();
                 for (ID s = 0; s < input.depotnum(); ++s) {
                     ID prev = s;
                     do {
                         for (ID n = 0; n < nodeNum; ++n) {
                             if (prev == n) { continue; }
                             if (!mp.isTrue(xpv.at(prev, n))) { continue; }
-                            quantity = lround(mp.getValue(delivery[p][v][n]));
                             auto &d(*route.add_deliveries());
                             d.set_node(n);
-                            d.set_quantity(quantity);
+                            d.set_quantity(lround(mp.getValue(delivery[p][v][n])));
                             prev = n;
                             break;
                         }

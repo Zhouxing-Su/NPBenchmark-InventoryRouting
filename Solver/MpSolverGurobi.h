@@ -202,11 +202,34 @@ public:
         void stop() { abort(); }
 
         double getValue(const DecisionVar &var) { return getSolution(var); }
-        double getRelaxedValue(const DecisionVar &var) { return getNodeRel(var); }
+        double getValue(const LinearExpr &expr) {
+            double value = expr.getConstant();
+            int itemNum = static_cast<int>(expr.size());
+            for (int i = 0; i < itemNum; ++i) {
+                value += (expr.getCoeff(i) * getValue(expr.getVar(i)));
+            }
+            return value; // OPTIMIZE[szx][9]: try `return expr.getValue();`?
+        }
         bool isTrue(const DecisionVar &var) { return (getValue(var) > 0.5); }
+        double getRelaxedValue(const DecisionVar &var) { return getNodeRel(var); }
 
         void setValue(DecisionVar &var, double value) { setSolution(var, value); }
         //using GRBCallback::useSolution;
+
+        double getObj() { return getDoubleInfo(GRB_CB_MIPSOL_OBJ); }
+        double getBestObj() {
+            switch (where) {
+            case GRB_CB_MIP:
+                getDoubleInfo(GRB_CB_MIP_OBJBST);
+                break;
+            case GRB_CB_MIPNODE:
+                getDoubleInfo(GRB_CB_MIPNODE_OBJBST);
+                break;
+            case GRB_CB_MIPSOL:
+                getDoubleInfo(GRB_CB_MIPSOL_OBJBST);
+                break;
+            }
+        }
 
         void callback() {
             if (where == GRB_CB_MIPSOL) {

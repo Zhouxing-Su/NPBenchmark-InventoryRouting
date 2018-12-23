@@ -269,6 +269,8 @@ int lhkMain(lkh::Tour &sln, const lkh::Tour &hintSln) {
         }
     }
 
+    FreeStructures();
+
     return EXIT_SUCCESS;
 }
 
@@ -276,53 +278,67 @@ int lhkMain(lkh::Tour &sln, const lkh::Tour &hintSln) {
 namespace lkh {
 
 bool solveTsp(Tour &sln, const CoordList2D &coordList, const Tour &hintSln) {
-    return async(launch::async, [&]() {
+    bool r;
+    thread t([&]() {
         Environment::load();
         Configuration::load();
         Problem::load(coordList);
-        return lhkMain(sln, hintSln);
-    }).get() == EXIT_SUCCESS;
+        r = lhkMain(sln, hintSln);
+    });
+    t.join();
+    return (r == EXIT_SUCCESS);
 }
 
 bool solveTsp(Tour &sln, const CoordList3D &coordList, const Tour &hintSln) {
-    return async(launch::async, [&]() {
+    bool r;
+    thread t([&]() {
         Environment::load();
         Configuration::load();
         Problem::load(coordList);
-        return lhkMain(sln, hintSln);
-    }).get() == EXIT_SUCCESS;
+        r = lhkMain(sln, hintSln);
+    });
+    t.join();
+    return (r == EXIT_SUCCESS);
 }
 
 bool solveTsp(Tour &sln, const AdjMat &adjMat, const Tour &hintSln) {
-    return async(launch::async, [&]() {
+    bool r;
+    thread t([&]() {
         Environment::load();
         Configuration::load();
         Problem::load(adjMat);
-        return lhkMain(sln, hintSln);
-    }).get() == EXIT_SUCCESS;
+        r = lhkMain(sln, hintSln);
+    });
+    t.join();
+    return (r == EXIT_SUCCESS);
 }
 
 bool solveTsp(Tour &sln, const AdjList &adjList, const Tour &hintSln) {
     throw "not supported yet.";
 
-    return async(launch::async, [&]() {
+    bool r;
+    thread t([&]() {
         Environment::load();
         Configuration::load();
         Problem::load(adjList);
-        return lhkMain(sln, hintSln);
-    }).get() == EXIT_SUCCESS;
+        r = lhkMain(sln, hintSln);
+    });
+    t.join();
+    return (r == EXIT_SUCCESS);
 }
 
 bool solveTsp(Tour &sln, const EdgeList &edgeList, Graph::ID nodeNum, const Tour &hintSln) {
     throw "not supported yet.";
 
-    return async(launch::async, [&]() {
+    bool r;
+    thread t([&]() {
         Environment::load();
         Configuration::load();
         Problem::load(edgeList, nodeNum);
-        return lhkMain(sln, hintSln);
-    }).get() == EXIT_SUCCESS;
+        r = lhkMain(sln, hintSln);
+    });
+    t.join();
+    return (r == EXIT_SUCCESS);
 }
-
 }
 }

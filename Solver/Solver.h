@@ -176,6 +176,16 @@ public:
     struct Solution : public Problem::Output { // delivery plan.
         Solution(Solver *pSolver = nullptr) : solver(pSolver) {}
 
+        void init(ID periodNum, ID vehicleNum, Price initCost = 0) {
+            totalCost = initCost;
+            for (ID p = 0; p < periodNum; ++p) {
+                auto &periodRoute(*add_periodroutes());
+                for (ID v = 0; v < vehicleNum; ++v) {
+                    periodRoute.add_vehicleroutes();
+                }
+            }
+        }
+
         Solver *solver;
     };
     #pragma endregion Type
@@ -211,6 +221,7 @@ public:
 
     struct { // auxiliary data for solver.
         Arr2D<Price> routingCost; // routingCost[i, j] is the routing cost from node i to j.
+        Price initHoldingCost; // the holding cost for initial quantity before horizon begin.
     } aux;
 
     Environment env;

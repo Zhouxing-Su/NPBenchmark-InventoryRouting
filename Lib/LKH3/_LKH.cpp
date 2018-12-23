@@ -104,8 +104,6 @@ thread_local int PatchingA;  /* Specifies the maximum number of alternating
 thread_local int PatchingC;  /* Specifies the maximum number of disjoint cycles to be
                 patched (by one or more alternating cycles) */
 thread_local GainType PenaltyGain;
-thread_local int Precision;  /* Internal precision in the representation of
-                transformed distances */
 thread_local int PredSucCostAvailable; /* PredCost and SucCost are available */
 thread_local int POPMUSIC_InitialTour;  /* Specifies whether the first POPMUSIC tour
                            is used as initial tour for LK */
@@ -122,7 +120,6 @@ thread_local short Reversed; /* Boolean used to indicate whether a tour has
                 been reversed */
 thread_local int Run;        /* Current run number */
 thread_local int Runs;       /* Total number of runs */
-thread_local int Scale;      /* Scale factor for Euclidean and ATT instances */
 thread_local double ServiceTime; /* Service time for a CVRP instance */
 thread_local int Serial;
 thread_local unsigned Seed;  /* Initial seed for random number generation */

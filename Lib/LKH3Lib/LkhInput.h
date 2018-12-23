@@ -111,7 +111,6 @@ struct Configuration { // tunes the performance of the core algorithm.
         PatchingARestricted = 0;
         PatchingCExtended = 0;
         PatchingCRestricted = 0;
-        Precision = 100;
         POPMUSIC_InitialTour = 0;
         POPMUSIC_MaxNeighbors = 5;
         POPMUSIC_SampleSize = 10;
@@ -122,7 +121,6 @@ struct Configuration { // tunes the performance of the core algorithm.
         RohePartitioning = 0;
         Runs = 0;
         Salesmen = 1;
-        Scale = -1;
         Seed = 1;
         SierpinskiPartitioning = 0;
         StopAtOptimum = 1;
@@ -330,19 +328,11 @@ struct Problem {
         c = c_EUC_2D;
         CoordType = TWOD_COORDS;
     }
-    static void  setEdgeWeightType_EXACT_2D() {
-        setEdgeWeightType_EUC_2D();
-        if (Scale == -1) { Scale = 1000; }
-    }
     static void setEdgeWeightType_EUC_3D() {
         WeightType = EUC_3D;
         Distance = Distance_EUC_3D;
         c = c_EUC_3D;
         CoordType = THREED_COORDS;
-    }
-    static void  setEdgeWeightType_EXACT_3D() {
-        setEdgeWeightType_EUC_3D();
-        if (Scale == -1) { Scale = 1000; }
     }
     static void setEdgeWeightType_FLOOR_2D() {
         WeightType = FLOOR_2D;
@@ -804,9 +794,6 @@ struct Problem {
         Salesmen = 1;
         if (Salesmen <= 0) { eprintf("SALESMEN/VEHICLES: <= 0"); }
 
-        Scale = 1;
-        if (Scale < 1) { eprintf("SCALE: < 1"); }
-
         //if (ServiceTime < 0) { eprintf("SERVICE_TIME: < 0"); }
 
         //for (ID i = 1; i <= Dim; i++) { NodeSet[i].ServiceTime = ; }
@@ -867,8 +854,6 @@ struct Problem {
         /* Adjust parameters */
         if (Seed == 0)
             Seed = (unsigned)time(0);
-        if (Precision == 0)
-            Precision = 100;
         if (InitialStepSize == 0)
             InitialStepSize = 1;
         if (MaxSwaps < 0)
@@ -881,8 +866,6 @@ struct Problem {
             MaxCandidates = Dimension - 1;
         if (ExtraCandidates > Dimension - 1)
             ExtraCandidates = Dimension - 1;
-        if (Scale < 1)
-            Scale = 1;
         if (SubproblemSize >= Dimension)
             SubproblemSize = Dimension;
         else if (SubproblemSize == 0) {
@@ -1041,20 +1024,6 @@ struct Problem {
             NodeSet[Depot->Id + DimensionSaved].DepotId = 1;
             for (i = Dim + 1; i <= DimensionSaved; i++)
                 NodeSet[i + DimensionSaved].DepotId = i - Dim + 1;
-        }
-        if (Scale < 1)
-            Scale = 1;
-        else {
-            Node *Ni = FirstNode;
-            do {
-                Ni->Earliest *= Scale;
-                Ni->Latest *= Scale;
-                Ni->ServiceTime *= Scale;
-            } while ((Ni = Ni->Suc) != FirstNode);
-            ServiceTime *= Scale;
-            RiskThreshold *= Scale;
-            if (DistanceLimit != DBL_MAX)
-                DistanceLimit *= Scale;
         }
         if (ServiceTime != 0) {
             for (i = 1; i <= Dim; i++)
@@ -1713,8 +1682,6 @@ struct Problem {
         int n = DimensionSaved, i, j;
         Node *Ni, *Nj;
 
-        if (Scale < 1)
-            Scale = 1;
         if (n > MaxMatrixDimension) {
             OldDistance = Distance;
             Distance = Distance_Asymmetric;

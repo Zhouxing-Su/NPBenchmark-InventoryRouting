@@ -306,7 +306,7 @@ extern thread_local int PatchingA;  /* Specifies the maximum number of alternati
 extern thread_local int PatchingC;  /* Specifies the maximum number of disjoint cycles to be
                    patched (by one or more alternating cycles) */
 extern thread_local GainType PenaltyGain;
-extern thread_local int Precision;  /* Internal precision in the representation of
+static constexpr int Precision = 1;  /* Internal precision in the representation of
                    transformed distances */
 extern thread_local int PredSucCostAvailable; /* PredCost and SucCost are available */
 extern thread_local int POPMUSIC_InitialTour;  /* Specifies whether the first POPMUSIC tour
@@ -324,7 +324,7 @@ extern thread_local short Reversed; /* Boolean used to indicate whether a tour h
                    been reversed */
 extern thread_local int Run;        /* Current run number */
 extern thread_local int Runs;       /* Total number of runs */
-extern thread_local int Scale;      /* Scale factor for Euclidean and ATT instances */ 
+static constexpr int Scale = 1;      /* Scale factor for Euclidean and ATT instances */ 
 extern thread_local double ServiceTime; /* Service time for a CVRP instance */
 extern thread_local int Serial;
 extern thread_local unsigned Seed;  /* Initial seed for random number generation */

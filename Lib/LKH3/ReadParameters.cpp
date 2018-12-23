@@ -531,7 +531,7 @@ void ReadParameters()
     PatchingARestricted = 0;
     PatchingCExtended = 0;
     PatchingCRestricted = 0;
-    Precision = 100;
+    //Precision = 100;
     POPMUSIC_InitialTour = 0;
     POPMUSIC_MaxNeighbors = 5;
     POPMUSIC_SampleSize = 10;
@@ -542,7 +542,7 @@ void ReadParameters()
     RohePartitioning = 0;
     Runs = 0;
     Salesmen = 1;
-    Scale = -1;
+    //Scale = -1;
     Seed = 1;
     SierpinskiPartitioning = 0;
     StopAtOptimum = 1;
@@ -999,9 +999,9 @@ void ReadParameters()
                 !sscanf(Token, "%d", &MaxPopulationSize))
                 eprintf("POPULATION_SIZE: integer expected");
         } else if (!strcmp(Keyword, "PRECISION")) {
-            if (!(Token = strtok(0, Delimiters)) ||
-                !sscanf(Token, "%d", &Precision))
-                eprintf("PRECISION: integer expected");
+            //if (!(Token = strtok(0, Delimiters)) ||
+            //    !sscanf(Token, "%d", &Precision))
+            //    eprintf("PRECISION: integer expected");
         } else if (!strcmp(Keyword, "PROBLEM_FILE")) {
             if (!(ProblemFileName = GetFileName(0)))
                 eprintf("PROBLEM_FILE: string expected");
@@ -1031,9 +1031,9 @@ void ReadParameters()
             if (Salesmen <= 0)
                 eprintf("%s: positive integer expected", Keyword);
         } else if (!strcmp(Keyword, "SCALE")) {
-            if (!(Token = strtok(0, Delimiters)) ||
-                !sscanf(Token, "%d", &Scale))
-                eprintf("SCALE: integer expected");
+            //if (!(Token = strtok(0, Delimiters)) ||
+            //    !sscanf(Token, "%d", &Scale))
+            //    eprintf("SCALE: integer expected");
         } else if (!strcmp(Keyword, "SEED")) {
             if (!(Token = strtok(0, Delimiters)) ||
                 !sscanf(Token, "%u", &Seed))

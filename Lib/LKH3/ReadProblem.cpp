@@ -469,8 +469,8 @@ void ReadProblem()
     /* Adjust parameters */
     if (Seed == 0)
         Seed = (unsigned) time(0);
-    if (Precision == 0)
-        Precision = 100;
+    //if (Precision == 0)
+    //    Precision = 100;
     if (InitialStepSize == 0)
         InitialStepSize = 1;
     if (MaxSwaps < 0)
@@ -483,8 +483,8 @@ void ReadProblem()
         MaxCandidates = Dimension - 1;
     if (ExtraCandidates > Dimension - 1)
         ExtraCandidates = Dimension - 1;
-    if (Scale < 1)
-        Scale = 1;
+    //if (Scale < 1)
+    //    Scale = 1;
     if (SubproblemSize >= Dimension)
         SubproblemSize = Dimension;
     else if (SubproblemSize == 0) {
@@ -644,20 +644,20 @@ void ReadProblem()
         for (i = Dim + 1; i <= DimensionSaved; i++)
             NodeSet[i + DimensionSaved].DepotId = i - Dim + 1;
     }
-    if (Scale < 1)
-        Scale = 1;
-    else {
-        Node *Ni = FirstNode;
-        do {
-            Ni->Earliest *= Scale;
-            Ni->Latest *= Scale;
-            Ni->ServiceTime *= Scale;
-        } while ((Ni = Ni->Suc) != FirstNode);
-        ServiceTime *= Scale;
-        RiskThreshold *= Scale;
-        if (DistanceLimit != DBL_MAX)
-            DistanceLimit *= Scale;
-    }
+    //if (Scale < 1)
+    //    Scale = 1;
+    //else {
+    //    Node *Ni = FirstNode;
+    //    do {
+    //        Ni->Earliest *= Scale;
+    //        Ni->Latest *= Scale;
+    //        Ni->ServiceTime *= Scale;
+    //    } while ((Ni = Ni->Suc) != FirstNode);
+    //    ServiceTime *= Scale;
+    //    RiskThreshold *= Scale;
+    //    if (DistanceLimit != DBL_MAX)
+    //        DistanceLimit *= Scale;
+    //}
     if (ServiceTime != 0) {
         for (i = 1; i <= Dim; i++)
             NodeSet[i].ServiceTime = ServiceTime;
@@ -1521,16 +1521,16 @@ static void Read_EDGE_WEIGHT_TYPE()
         Distance = Distance_EUC_2D;
         c = c_EUC_2D;
         CoordType = TWOD_COORDS;
-        if (Scale == -1 && !strcmp(EdgeWeightType, "EXACT_2D"))
-            Scale = 1000;
+        //if (Scale == -1 && !strcmp(EdgeWeightType, "EXACT_2D"))
+        //    Scale = 1000;
     } else if (!strcmp(EdgeWeightType, "EUC_3D") ||
                !strcmp(EdgeWeightType, "EXACT_3D")) {
         WeightType = EUC_3D;
         Distance = Distance_EUC_3D;
         c = c_EUC_3D;
         CoordType = THREED_COORDS;
-        if (Scale == -1 && !strcmp(EdgeWeightType, "EXACT_3D"))
-            Scale = 1000;
+        //if (Scale == -1 && !strcmp(EdgeWeightType, "EXACT_3D"))
+        //    Scale = 1000;
     } else if (!strcmp(EdgeWeightType, "EXPLICIT")) {
         WeightType = EXPLICIT;
         Distance = Distance_EXPLICIT;
@@ -2208,8 +2208,8 @@ static void Convert2FullMatrix()
     int n = DimensionSaved, i, j;
     Node *Ni, *Nj;
 
-    if (Scale < 1)
-        Scale = 1;
+    //if (Scale < 1)
+    //    Scale = 1;
     if (n > MaxMatrixDimension) {
         OldDistance = Distance;
         Distance = Distance_Asymmetric;

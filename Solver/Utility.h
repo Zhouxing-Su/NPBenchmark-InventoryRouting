@@ -15,6 +15,7 @@
 #include <initializer_list>
 #include <vector>
 #include <map>
+#include <set>
 #include <random>
 #include <iostream>
 #include <iomanip>
@@ -746,6 +747,11 @@ public:
     template<typename T>
     static T bound(T num, T lb, T ub) {
         return std::min(std::max(num, lb), ub);
+    }
+
+    template<typename T>
+    static bool contains(const std::set<T> &s, const T &value) {
+        return s.find(value) != s.end();
     }
 };
 

@@ -366,7 +366,7 @@ public:
         model.set(GRB_DoubleParam_TimeLimit, timeout);
     }
     // only use it in gurobi multi-obj mode.
-    void setTimeLimitInSecond(int objIndex, double second) { model.getMultiobjEnv(objIndex).set(GRB_DoubleParam_TimeLimit, second); }
+    void setTimeLimitInSecond(int objIndex, double second) { model.getMultiobjEnv(objIndex).set(GRB_DoubleParam_TimeLimit, (std::max)(second, 0.0)); }
 
     void setOutput(bool enable = Configuration::DefaultOutputState) { model.set(GRB_IntParam_OutputFlag, enable); }
 

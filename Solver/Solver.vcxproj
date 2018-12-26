@@ -170,6 +170,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Lib\LKH3Lib\Arr.h" />
+    <ClInclude Include="..\Lib\LKH3Lib\CachedTspSolver.h" />
     <ClInclude Include="..\Lib\LKH3Lib\Graph.h" />
     <ClInclude Include="..\Lib\LKH3Lib\LkhInput.h" />
     <ClInclude Include="..\Lib\LKH3Lib\TspCache.h" />

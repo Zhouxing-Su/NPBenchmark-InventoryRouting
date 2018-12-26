@@ -4,8 +4,8 @@
 /// note  : 1.	
 ////////////////////////////////
 
-#ifndef SMART_SZX_GOAL_LKH3LIB_SOLVER_H
-#define SMART_SZX_GOAL_LKH3LIB_SOLVER_H
+#ifndef SMART_SZX_GOAL_LKH3LIB_TSP_SOLVER_H
+#define SMART_SZX_GOAL_LKH3LIB_TSP_SOLVER_H
 
 
 #include "Graph.h"
@@ -45,4 +45,4 @@ bool solveTsp(Tour &sln, const EdgeList &edgeList, Graph::ID nodeNum, const Tour
 }
 
 
-#endif // SMART_SZX_GOAL_LKH3LIB_SOLVER_H
+#endif // SMART_SZX_GOAL_LKH3LIB_TSP_SOLVER_H

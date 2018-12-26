@@ -270,7 +270,6 @@ int lhkMain(lkh::Tour &sln, const lkh::Tour &hintSln) {
     }
 
     FreeStructures();
-
     return EXIT_SUCCESS;
 }
 
@@ -340,5 +339,6 @@ bool solveTsp(Tour &sln, const EdgeList &edgeList, Graph::ID nodeNum, const Tour
     t.join();
     return (r == EXIT_SUCCESS);
 }
+
 }
 }

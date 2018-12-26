@@ -12,7 +12,7 @@
 
 #include "CsvReader.h"
 #include "MpSolver.h"
-#include "TspSolver.h"
+#include "CachedTspSolver.h"
 
 
 using namespace std;
@@ -486,16 +486,21 @@ void Solver::iteratedModel(Solution &sln) {
         }
     };
 
+    static const String TspCacheDir("TspCache/");
+    System::makeSureDirExist(TspCacheDir);
+    CachedTspSolver tspSolver(nodeNum, TspCacheDir + env.friendlyInstName() + ".csv");
+    lkh::CoordList2D coords; // OPTIMIZE[szx][3]: use adjacency matrix to avoid re-calculation and different rounding?
+    coords.reserve(nodeNum);
+    List<ID> pickedNodes(nodeNum);
+    List<bool> containNode(nodeNum);
+    lkh::Tour tour;
+
     Solution curSln; // current solution.
     curSln.init(input.periodnum(), vehicleNum);
     auto nodeSetHandler = [&](MpSolver::MpEvent &e) {
         //if (e.getObj() > sln.totalCost) { e.stop(); } // there could be bad heuristic solutions.
 
         static constexpr double Precision = 1000;
-        lkh::CoordList2D coords; // OPTIMIZE[szx][3]: use adjacency matrix to avoid re-calculation and different rounding?
-        coords.reserve(nodeNum);
-        List<ID> pickedNodes(nodeNum);
-        lkh::Tour tour;
         Expr nodeDiff;
 
         curSln.totalCost = 0;
@@ -504,12 +509,14 @@ void Solver::iteratedModel(Solution &sln) {
             for (ID v = 0; v < vehicleNum; ++v) {
                 Arr2D<Dvar> &xpv(x.at(p, v));
                 coords.clear();
+                fill(containNode.begin(), containNode.end(), false);
                 for (ID n = 0; n < nodeNum; ++n) {
                     bool visited = false;
                     for (ID m = 0; m < nodeNum; ++m) {
                         if (n == m) { continue; }
                         if (!e.isTrue(xpv.at(n, m))) { continue; }
                         pickedNodes[coords.size()] = n;
+                        containNode[n] = true;
                         coords.push_back(lkh::Coord2D(nodes[n].x() * Precision, nodes[n].y() * Precision));
                         visited = true;
                         break;
@@ -522,7 +529,7 @@ void Solver::iteratedModel(Solution &sln) {
                 auto &route(*periodRoute.mutable_vehicleroutes(v));
                 route.clear_deliveries();
                 if (coords.size() > 2) {
-                    lkh::solveTsp(tour, coords); // repair the relaxed solution.
+                    tspSolver.solve(tour, containNode, coords); // repair the relaxed solution.
                 } else if (coords.size() == 2) { // trivial cases.
                     tour.nodes.resize(2);
                     tour.nodes[0] = 0;

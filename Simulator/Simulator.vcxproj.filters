@@ -129,6 +129,9 @@
     <ClInclude Include="..\Lib\LKH3\Sequence.h">
       <Filter>Solver\TspLib\LKH3</Filter>
     </ClInclude>
+    <ClInclude Include="..\Lib\LKH3Lib\CachedTspSolver.h">
+      <Filter>Solver\TspLib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">

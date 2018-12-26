@@ -13,6 +13,7 @@
 #include <fstream>
 #include <functional>
 #include <unordered_map>
+#include <mutex>
 
 #include "Graph.h"
 
@@ -144,6 +145,8 @@ public:
     }
 
     virtual bool set(const Tour &sln, const NodeSet &containNode) override {
+        std::lock_guard<std::mutex> writeLock(writeMutex);
+
         TreeNodeID treeNode = 0;
         auto lastNode = containNode.end() - 1;
         for (auto n = containNode.begin(); n != lastNode; ++n) {
@@ -188,6 +191,7 @@ public:
 
     std::vector<BinTreeNode> nodePool;
     std::vector<Tour> tourPool;
+    std::mutex writeMutex;
 };
 
 
@@ -224,6 +228,8 @@ struct TspCache_HashImpl : public TspCacheBase<Tour> {
     }
 
     virtual bool set(const Tour &sln, const NodeSet &containNode) override {
+        std::lock_guard<std::mutex> writeLock(writeMutex);
+
         auto t = tourMap.find(containNode);
         if (t == tourMap.end()) {
             tourMap[containNode] = sln;
@@ -253,6 +259,7 @@ struct TspCache_HashImpl : public TspCacheBase<Tour> {
 
 
     std::unordered_map<NodeSet, Tour> tourMap;
+    std::mutex writeMutex;
 };
 
 

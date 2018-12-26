@@ -27,6 +27,8 @@ struct CachedTspSolver {
     using EdgeList = lkh::EdgeList;
     using TspCache = TspCache<Tour>;
 
+    using MapNodeId = std::function<ID(ID)>;
+
 
     CachedTspSolver(lkh::ID nodeNum) : tspCache(nodeNum) {}
     CachedTspSolver(lkh::ID nodeNum, const std::string &cacheFilePath)
@@ -38,16 +40,23 @@ struct CachedTspSolver {
 
 
     template<typename InputData>
-    bool solve(Tour &sln, const TspCache::NodeSet &containNode, const InputData &input, const Tour &hintSln = Tour()) {
+    bool solve(Tour &sln, const TspCache::NodeSet &containNode, const InputData &input, MapNodeId mapId, const Tour &hintSln = Tour()) {
         const Tour &cachedTour(tspCache.get(containNode));
         if (cachedTour.nodes.empty()) {
             if (!lkh::solveTsp(sln, input, hintSln)) { return false; }
-            tspCache.set(sln, containNode);
+            if (mapId) { // recover node ID.
+                for (auto n = sln.nodes.begin(); n != sln.nodes.end(); ++n) { *n = mapId(*n); }
+            }
+            tspCache.set(sln, containNode); // TODO[szx][0]: is it thread safe?
         } else {
             sln = cachedTour;
         }
 
         return true;
+    }
+    template<typename InputData>
+    bool solve(Tour &sln, const TspCache::NodeSet &containNode, const InputData &input, const Tour &hintSln = Tour()) {
+        return solve(sln, containNode, input, MapNodeId(), hintSln);
     }
     //bool solve(Tour &sln, const EdgeList &edgeList, const Tour &hintSln = Tour()) {}
 

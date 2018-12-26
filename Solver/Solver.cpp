@@ -489,18 +489,20 @@ void Solver::iteratedModel(Solution &sln) {
     static const String TspCacheDir("TspCache/");
     System::makeSureDirExist(TspCacheDir);
     CachedTspSolver tspSolver(nodeNum, TspCacheDir + env.friendlyInstName() + ".csv");
-    lkh::CoordList2D coords; // OPTIMIZE[szx][3]: use adjacency matrix to avoid re-calculation and different rounding?
-    coords.reserve(nodeNum);
-    List<ID> pickedNodes(nodeNum);
-    List<bool> containNode(nodeNum);
-    lkh::Tour tour;
 
     Solution curSln; // current solution.
     curSln.init(input.periodnum(), vehicleNum);
     auto nodeSetHandler = [&](MpSolver::MpEvent &e) {
         //if (e.getObj() > sln.totalCost) { e.stop(); } // there could be bad heuristic solutions.
 
+        // OPTIMIZE[szx][0]: check the bound and only apply this to the optimal sln.
+
         static constexpr double Precision = 1000;
+        lkh::CoordList2D coords; // OPTIMIZE[szx][3]: use adjacency matrix to avoid re-calculation and different rounding?
+        coords.reserve(nodeNum);
+        List<ID> nodeIdMap(nodeNum);
+        List<bool> containNode(nodeNum);
+        lkh::Tour tour;
         Expr nodeDiff;
 
         curSln.totalCost = 0;
@@ -515,7 +517,7 @@ void Solver::iteratedModel(Solution &sln) {
                     for (ID m = 0; m < nodeNum; ++m) {
                         if (n == m) { continue; }
                         if (!e.isTrue(xpv.at(n, m))) { continue; }
-                        pickedNodes[coords.size()] = n;
+                        nodeIdMap[coords.size()] = n;
                         containNode[n] = true;
                         coords.push_back(lkh::Coord2D(nodes[n].x() * Precision, nodes[n].y() * Precision));
                         visited = true;
@@ -528,8 +530,8 @@ void Solver::iteratedModel(Solution &sln) {
                 }
                 auto &route(*periodRoute.mutable_vehicleroutes(v));
                 route.clear_deliveries();
-                if (coords.size() > 2) {
-                    tspSolver.solve(tour, containNode, coords); // repair the relaxed solution.
+                if (coords.size() > 2) { // repair the relaxed solution.
+                    tspSolver.solve(tour, containNode, coords, [&](ID n) { return nodeIdMap[n]; });
                 } else if (coords.size() == 2) { // trivial cases.
                     tour.nodes.resize(2);
                     tour.nodes[0] = 0;
@@ -539,12 +541,10 @@ void Solver::iteratedModel(Solution &sln) {
                 }
                 tour.nodes.push_back(tour.nodes.front());
                 for (auto n = tour.nodes.begin(), m = n + 1; m != tour.nodes.end(); ++n, ++m) {
-                    ID nn = pickedNodes[*n];
-                    ID mm = pickedNodes[*m];
                     auto &d(*route.add_deliveries());
-                    d.set_node(mm);
-                    d.set_quantity(lround(e.getValue(delivery[p][v][mm])));
-                    curSln.totalCost += aux.routingCost.at(nn, mm);
+                    d.set_node(*m);
+                    d.set_quantity(lround(e.getValue(delivery[p][v][*m])));
+                    curSln.totalCost += aux.routingCost.at(*n, *m);
                 }
             }
         }

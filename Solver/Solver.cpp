@@ -324,12 +324,14 @@ void Solver::iteratedModel(Solution &sln) {
     MpSolver mp(mpCfg);
 
     // delivery[p, v, n] is the quantity delivered to node n at period p by vehicle v.
-    Arr<Arr2D<Dvar>> delivery(input.periodnum(), Arr2D<Dvar>(vehicleNum, nodeNum));
+    Arr2D<Arr<Dvar>> delivery(input.periodnum(), vehicleNum, Arr<Dvar>(nodeNum));
     // x[p, v, n, m] is true if the edge from node n to node m is visited at period p by vehicle v.
     Arr2D<Arr2D<Dvar>> x(input.periodnum(), vehicleNum, Arr2D<Dvar>(nodeNum, nodeNum));
 
     // quantityLevel[n, p] is the rest quantity of node n at period p after the delivery and consumption have happened.
     Arr2D<Expr> quantityLevel(nodeNum, input.periodnum());
+    // degrees[n] is the sum of in-coming edges.
+    Arr2D<Arr<Expr>> degrees(input.periodnum(), vehicleNum, Arr<Expr>(nodeNum));
 
     // add decision variables.
     for (ID p = 0; p < input.periodnum(); ++p) {
@@ -386,6 +388,7 @@ void Solver::iteratedModel(Solution &sln) {
                 Expr inDegree;
                 for (ID m = 0; m < n; ++m) { inDegree += xpv.at(m, n); }
                 for (ID m = n + 1; m < nodeNum; ++m) { inDegree += xpv.at(m, n); }
+                degrees[p][v][n] = inDegree;
                 Expr outDegree;
                 for (ID m = 0; m < n; ++m) { outDegree += xpv.at(n, m); }
                 for (ID m = n + 1; m < nodeNum; ++m) { outDegree += xpv.at(n, m); }
@@ -523,10 +526,7 @@ void Solver::iteratedModel(Solution &sln) {
                         visited = true;
                         break;
                     }
-                    Expr degree;
-                    for (ID m = 0; m < n; ++m) { degree += xpv.at(n, m); }
-                    for (ID m = n + 1; m < nodeNum; ++m) { degree += xpv.at(n, m); }
-                    nodeDiff += (visited ? (1 - degree) : degree);
+                    nodeDiff += (visited ? (1 - degrees[p][v][n]) : degrees[p][v][n]);
                 }
                 auto &route(*periodRoute.mutable_vehicleroutes(v));
                 route.clear_deliveries();

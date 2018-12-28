@@ -250,3 +250,4 @@ ModelManifest.xml
 /Deploy/Solution/*.json*
 /Deploy/Visualization/*.html
 /Deploy/Instance/abs
+/Deploy/TspCache

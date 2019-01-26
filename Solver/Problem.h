@@ -4,8 +4,8 @@
 /// note  : 1.	
 ////////////////////////////////
 
-#ifndef SMART_QYM_INVENTORY_ROUTING_PROBLEM_H
-#define SMART_QYM_INVENTORY_ROUTING_PROBLEM_H
+#ifndef SMART_SZX_INVENTORY_ROUTING_PROBLEM_H
+#define SMART_SZX_INVENTORY_ROUTING_PROBLEM_H
 
 
 #include "Config.h"
@@ -73,4 +73,4 @@ public:
 }
 
 
-#endif // SMART_QYM_INVENTORY_ROUTING_PROBLEM_H
+#endif // SMART_SZX_INVENTORY_ROUTING_PROBLEM_H

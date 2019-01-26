@@ -4,8 +4,8 @@
 /// note  : 1.	
 ////////////////////////////////
 
-#ifndef SMART_QYM_INVENTORY_ROUTING_SOLVER_H
-#define SMART_QYM_INVENTORY_ROUTING_SOLVER_H
+#ifndef SMART_SZX_INVENTORY_ROUTING_SOLVER_H
+#define SMART_SZX_INVENTORY_ROUTING_SOLVER_H
 
 
 #include "Config.h"
@@ -236,4 +236,4 @@ public:
 }
 
 
-#endif // SMART_QYM_INVENTORY_ROUTING_SOLVER_H
+#endif // SMART_SZX_INVENTORY_ROUTING_SOLVER_H

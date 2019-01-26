@@ -4,8 +4,8 @@
 /// note  : 1.	
 ////////////////////////////////
 
-#ifndef SMART_QYM_GATE_REASSIGNMENT_MP_SOLVER_H
-#define SMART_QYM_GATE_REASSIGNMENT_MP_SOLVER_H
+#ifndef SMART_SZX_GATE_REASSIGNMENT_MP_SOLVER_H
+#define SMART_SZX_GATE_REASSIGNMENT_MP_SOLVER_H
 
 
 #include "Config.h"
@@ -26,4 +26,4 @@ using IsTrue = std::function<bool(const T&)>;
 }
 
 
-#endif // SMART_QYM_GATE_REASSIGNMENT_MP_SOLVER_H
+#endif // SMART_SZX_GATE_REASSIGNMENT_MP_SOLVER_H

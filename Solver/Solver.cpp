@@ -76,10 +76,10 @@ int Solver::Cli::run(int argc, char * argv[]) {
     submission.set_obj(solver.output.totalCost);
 
     solver.output.save(env.slnPath, submission);
-    #if QYM_DEBUG
+    #if SZX_DEBUG
     solver.output.save(env.solutionPathWithTime(), submission);
     solver.record();
-    #endif // QYM_DEBUG
+    #endif // SZX_DEBUG
 
     return 0;
 }
@@ -128,12 +128,12 @@ void Solver::Environment::load(const String &filePath) {
 }
 
 void Solver::Environment::loadWithoutCalibrate(const String &filePath) {
-    // EXTEND[qym][8]: load environment from file.
-    // EXTEND[qym][8]: check file existence first.
+    // EXTEND[szx][8]: load environment from file.
+    // EXTEND[szx][8]: check file existence first.
 }
 
 void Solver::Environment::save(const String &filePath) const {
-    // EXTEND[qym][8]: save environment to file.
+    // EXTEND[szx][8]: save environment to file.
 }
 void Solver::Environment::calibrate() {
     // adjust thread number.
@@ -193,7 +193,7 @@ bool Solver::solve() {
 }
 
 void Solver::record() const {
-    #if QYM_DEBUG
+    #if SZX_DEBUG
     int generation = 0;
 
     ostringstream log;
@@ -236,7 +236,7 @@ void Solver::record() const {
         << generation << "," << iteration;
 
     // record solution vector.
-    // EXTEND[qym][2]: save solution in log.
+    // EXTEND[szx][2]: save solution in log.
     log << endl;
 
     // append all text atomically.
@@ -250,11 +250,11 @@ void Solver::record() const {
     }
     logFile << log.str();
     logFile.close();
-    #endif // QYM_DEBUG
+    #endif // SZX_DEBUG
 }
 
 bool Solver::check(double &checkerObj) const {
-    #if QYM_DEBUG
+    #if SZX_DEBUG
     enum CheckerFlag {
         IoError = 0x0,
         FormatError = 0x1,
@@ -280,7 +280,7 @@ bool Solver::check(double &checkerObj) const {
     #else
     checkerObj = 0;
     return true;
-    #endif // QYM_DEBUG
+    #endif // SZX_DEBUG
 }
 
 void Solver::init() {

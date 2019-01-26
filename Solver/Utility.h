@@ -4,8 +4,8 @@
 /// note  : 1.	
 ////////////////////////////////
 
-#ifndef SMART_QYM_INVENTORY_ROUTING_UTILITY_H
-#define SMART_QYM_INVENTORY_ROUTING_UTILITY_H
+#ifndef SMART_SZX_INVENTORY_ROUTING_UTILITY_H
+#define SMART_SZX_INVENTORY_ROUTING_UTILITY_H
 
 
 #include "Config.h"
@@ -540,13 +540,13 @@ public:
     };
 
 
-    #if QYM_DEBUG
+    #if SZX_DEBUG
     static bool isTurnedOn(int level) { return (level == On); }
     static bool isTurnedOff(int level) { return !isTurnedOn(level); }
     #else
     static bool isTurnedOn(int level) { return false; }
     static bool isTurnedOff(int level) { return true; }
-    #endif // QYM_DEBUG
+    #endif // SZX_DEBUG
 
 
     Log(int logLevel, std::ostream &logFile) : level(logLevel), os(logFile) {}
@@ -758,4 +758,4 @@ public:
 }
 
 
-#endif // SMART_QYM_INVENTORY_ROUTING_H
+#endif // SMART_SZX_INVENTORY_ROUTING_H

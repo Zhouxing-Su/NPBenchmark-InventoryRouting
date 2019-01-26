@@ -5,8 +5,8 @@
 /// note  : 1.	tag macros with [on/off] to indicate prefered state.
 ////////////////////////////////
 
-#ifndef SMART_QYM_INVENTORY_ROUTING_CONFIG_H
-#define SMART_QYM_INVENTORY_ROUTING_CONFIG_H
+#ifndef SMART_SZX_INVENTORY_ROUTING_CONFIG_H
+#define SMART_SZX_INVENTORY_ROUTING_CONFIG_H
 
 
 #pragma region PlatformCheck
@@ -96,7 +96,7 @@
 
 #pragma region DebugHelper
 // [off] activate test codes like additional check for data consistency..
-#define QYM_DEBUG  _CC_MS_VC
+#define SZX_DEBUG  _CC_MS_VC
 #pragma endregion DebugHelper
 
 
@@ -104,4 +104,4 @@
 #pragma endregion SolverBehavior
 
 
-#endif // SMART_QYM_INVENTORY_ROUTING_CONFIG_H
+#endif // SMART_SZX_INVENTORY_ROUTING_CONFIG_H

@@ -8,8 +8,8 @@
 ///         2.  this project does not provide Gurobi lisence.
 ////////////////////////////////
 
-#ifndef SMART_QYM_GATE_REASSIGNMENT_MP_SOLVE_GUROBI_H
-#define SMART_QYM_GATE_REASSIGNMENT_MP_SOLVE_GUROBI_H
+#ifndef SMART_SZX_GATE_REASSIGNMENT_MP_SOLVE_GUROBI_H
+#define SMART_SZX_GATE_REASSIGNMENT_MP_SOLVE_GUROBI_H
 
 
 #include "Config.h"
@@ -478,4 +478,4 @@ public: // fields that rely on initialized cfg.
 }
 
 
-#endif // SMART_QYM_GATE_REASSIGNMENT_MP_SOLVE_GUROBI_H
+#endif // SMART_SZX_GATE_REASSIGNMENT_MP_SOLVE_GUROBI_H

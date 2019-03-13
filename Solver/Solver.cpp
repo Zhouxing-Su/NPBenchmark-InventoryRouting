@@ -534,8 +534,8 @@ void Solver::iteratedModel(Solution &sln) {
                     tspSolver.solve(tour, containNode, coords, [&](ID n) { return nodeIdMap[n]; });
                 } else if (coords.size() == 2) { // trivial cases.
                     tour.nodes.resize(2);
-                    tour.nodes[0] = 0;
-                    tour.nodes[1] = 1;
+                    tour.nodes[0] = nodeIdMap[0];
+                    tour.nodes[1] = nodeIdMap[1];
                 } else {
                     continue;
                 }

@@ -290,7 +290,7 @@ void Solver::init() {
     for (auto i = input.nodes().begin(); i != input.nodes().end(); ++i, ++n) {
         ID m = 0;
         for (auto j = input.nodes().begin(); j != i; ++j, ++m) {
-            double value = round(hypot(i->x() - j->x(), i->y() - j->y()));
+            double value = floor(hypot(i->x() - j->x(), i->y() - j->y()));
             aux.routingCost[n][m] = aux.routingCost[m][n] = value;
         }
     }

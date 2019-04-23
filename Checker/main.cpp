@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
 
     // check routing cost.
     auto distance = [](const pb::Node &i, const pb::Node &j) {
-        return round(hypot(i.x() - j.x(), i.y() - j.y()));
+        return floor(hypot(i.x() - j.x(), i.y() - j.y()));
     };
     double routingCost = 0;
     for (auto pr = periodRoutes.begin(); pr != periodRoutes.end(); ++pr) {

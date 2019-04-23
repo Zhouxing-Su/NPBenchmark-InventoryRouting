@@ -549,8 +549,11 @@ struct Problem {
 
         setNodeNum(coordList.size());
 
-        EdgeWeightType = Copy("EUC_2D");
-        setEdgeWeightType_EUC_2D();
+        //EdgeWeightType = Copy("EUC_2D");
+        //setEdgeWeightType_EUC_2D();
+
+        EdgeWeightType = Copy("FLOOR_2D");
+        setEdgeWeightType_FLOOR_2D();
 
         NodeCoordType = Copy("TWOD_COORDS");
         CoordType = TWOD_COORDS;

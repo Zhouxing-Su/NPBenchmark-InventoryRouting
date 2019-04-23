@@ -212,6 +212,8 @@ protected:
     bool optimize(Solution &sln, ID workerId = 0); // optimize by a single worker.
 
     void iteratedModel(Solution &sln);
+
+    void detectCollinearity();
     #pragma endregion Method
 
     #pragma region Field

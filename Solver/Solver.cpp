@@ -299,6 +299,37 @@ void Solver::init() {
     for (auto i = input.nodes().begin(); i != input.nodes().end(); ++i) {
         aux.initHoldingCost += i->holdingcost() * i->initquantity();
     }
+
+    detectCollinearity();
+}
+
+void Solver::detectCollinearity() {
+    ID count = 0;
+    Arr2D<List<ID>> collinearity(input.nodes_size(), input.nodes_size());
+    for (ID n = 0; n < input.nodes_size(); ++n) {
+        for (ID m = n + 1; m < input.nodes_size(); ++m) {
+            for (ID l = 0; l < input.nodes_size(); ++l) {
+                if ((l == n) || (l == m)) { continue; }
+                if (Math::weakLess(aux.routingCost[n][l] + aux.routingCost[m][l], aux.routingCost[n][m])) {
+                    collinearity[n][m].push_back(l);
+                }
+            }
+            count += static_cast<ID>(collinearity[n][m].size());
+        }
+    }
+    Log(LogSwitch::Szx::Preprocess) << "collinearity: " << count << endl;
+
+    if (Log::isTurnedOn(LogSwitch::Szx::InputAnalysis)) {
+        for (ID n = 0; n < input.nodes_size(); ++n) {
+            for (ID m = n + 1; m < input.nodes_size(); ++m) {
+                Log(LogSwitch::Szx::InputAnalysis) << n << "-" << m << ":";
+                for (auto l = collinearity[n][m].begin(); l != collinearity[n][m].end(); ++l) {
+                    Log(LogSwitch::Szx::InputAnalysis) << " " << *l;
+                }
+                Log(LogSwitch::Szx::InputAnalysis) << endl;
+            }
+        }
+    }
 }
 
 bool Solver::optimize(Solution &sln, ID workerId) {
@@ -588,6 +619,7 @@ void Solver::iteratedModel(Solution &sln) {
         }
     }
 }
+
 #pragma endregion Solver
 
 }

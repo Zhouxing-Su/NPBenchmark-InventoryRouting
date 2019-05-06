@@ -300,7 +300,7 @@ void Solver::init() {
         aux.initHoldingCost += i->holdingcost() * i->initquantity();
     }
 
-    detectCollinearity();
+    //detectCollinearity();
 }
 
 void Solver::detectCollinearity() {
@@ -343,6 +343,14 @@ bool Solver::optimize(Solution &sln, ID workerId) {
 }
 
 void Solver::iteratedModel(Solution &sln) {
+    List<bool> isRoutePeriodFixed(input.periodnum(), false);
+
+    iteratedModel(sln, isRoutePeriodFixed);
+
+    // OPTIMIZE[szx][0]: fix route in some periods.
+}
+
+void Solver::iteratedModel(Solution &sln, List<bool> &isRoutePeriodFixed) {
     using Dvar = MpSolver::DecisionVar;
     using Expr = MpSolver::LinearExpr;
 
@@ -464,6 +472,90 @@ void Solver::iteratedModel(Solution &sln) {
     mp.addObjective(obj, MpSolver::OptimaOrientation::Minimize, 0, 0, 0, env.timeoutInSecond());
 
     // add callbacks.
+    Solution curSln; // current solution.
+    curSln.init(input.periodnum(), vehicleNum);
+
+    static const String TspCacheDir("TspCache/");
+    System::makeSureDirExist(TspCacheDir);
+    CachedTspSolver tspSolver(nodeNum, TspCacheDir + env.friendlyInstName() + ".csv");
+    auto fixSln = [&](MpSolver::MpEvent &e) {
+        //if (e.getObj() > sln.totalCost) { e.stop(); } // there could be bad heuristic solutions.
+
+        // OPTIMIZE[szx][0]: check the bound and only apply this to the optimal sln.
+
+        static constexpr double Precision = 1000;
+        lkh::CoordList2D coords; // OPTIMIZE[szx][3]: use adjacency matrix to avoid re-calculation and different rounding?
+        coords.reserve(nodeNum);
+        List<ID> nodeIdMap(nodeNum);
+        List<bool> containNode(nodeNum);
+        lkh::Tour tour;
+
+        curSln.totalCost = 0;
+        for (ID p = 0; p < input.periodnum(); ++p) {
+            auto &periodRoute(*curSln.mutable_periodroutes(p));
+            for (ID v = 0; v < vehicleNum; ++v) {
+                Arr2D<Dvar> &xpv(x.at(p, v));
+                coords.clear();
+                fill(containNode.begin(), containNode.end(), false);
+                for (ID n = 0; n < nodeNum; ++n) {
+                    bool visited = false;
+                    for (ID m = 0; m < nodeNum; ++m) {
+                        if (n == m) { continue; }
+                        if (!e.isTrue(xpv.at(n, m))) { continue; }
+                        nodeIdMap[coords.size()] = n;
+                        containNode[n] = true;
+                        coords.push_back(lkh::Coord2D(nodes[n].x() * Precision, nodes[n].y() * Precision));
+                        visited = true;
+                        break;
+                    }
+                }
+                auto &route(*periodRoute.mutable_vehicleroutes(v));
+                route.clear_deliveries();
+                if (coords.size() > 2) { // repair the relaxed solution.
+                    tspSolver.solve(tour, containNode, coords, [&](ID n) { return nodeIdMap[n]; });
+                } else if (coords.size() == 2) { // trivial cases.
+                    tour.nodes.resize(2);
+                    tour.nodes[0] = nodeIdMap[0];
+                    tour.nodes[1] = nodeIdMap[1];
+                } else {
+                    continue;
+                }
+                tour.nodes.push_back(tour.nodes.front());
+                for (auto n = tour.nodes.begin(), m = n + 1; m != tour.nodes.end(); ++n, ++m) {
+                    auto &d(*route.add_deliveries());
+                    d.set_node(*m);
+                    d.set_quantity(lround(e.getValue(delivery[p][v][*m])));
+                    curSln.totalCost += aux.routingCost.at(*n, *m);
+                }
+            }
+        }
+
+        curSln.totalCost += e.getValue(holdingCost);
+        if (curSln.totalCost < sln.totalCost) {
+            Log(LogSwitch::Szx::Model) << "opt=" << curSln.totalCost << endl;
+            swap(curSln, sln);
+        }
+    };
+
+    auto nodeSetHandler = [&](MpSolver::MpEvent &e) {
+        Expr nodeDiff;
+        for (ID p = 0; p < input.periodnum(); ++p) {
+            auto &periodRoute(*curSln.mutable_periodroutes(p));
+            for (ID v = 0; v < vehicleNum; ++v) {
+                Arr2D<Dvar> &xpv(x.at(p, v));
+                for (ID n = 0; n < nodeNum; ++n) {
+                    bool visited = false;
+                    for (ID m = 0; m < nodeNum; ++m) {
+                        if (n == m) { continue; }
+                        if (e.isTrue(xpv.at(n, m))) { visited = true; break; }
+                    }
+                    nodeDiff += (visited ? (1 - degrees[p][v][n]) : degrees[p][v][n]);
+                }
+            }
+        }
+        e.addLazy(nodeDiff >= 1);
+    };
+
     auto subTourHandler = [&](MpSolver::MpEvent &e) {
         enum EliminationPolicy { // OPTIMIZE[szx][0]: first sub-tour, best sub-tour or all sub-tours?
             NoSubTour = 0x0,
@@ -520,75 +612,10 @@ void Solver::iteratedModel(Solution &sln) {
         }
     };
 
-    static const String TspCacheDir("TspCache/");
-    System::makeSureDirExist(TspCacheDir);
-    CachedTspSolver tspSolver(nodeNum, TspCacheDir + env.friendlyInstName() + ".csv");
-
-    Solution curSln; // current solution.
-    curSln.init(input.periodnum(), vehicleNum);
-    auto nodeSetHandler = [&](MpSolver::MpEvent &e) {
-        //if (e.getObj() > sln.totalCost) { e.stop(); } // there could be bad heuristic solutions.
-
-        // OPTIMIZE[szx][0]: check the bound and only apply this to the optimal sln.
-
-        static constexpr double Precision = 1000;
-        lkh::CoordList2D coords; // OPTIMIZE[szx][3]: use adjacency matrix to avoid re-calculation and different rounding?
-        coords.reserve(nodeNum);
-        List<ID> nodeIdMap(nodeNum);
-        List<bool> containNode(nodeNum);
-        lkh::Tour tour;
-        Expr nodeDiff;
-
-        curSln.totalCost = 0;
-        for (ID p = 0; p < input.periodnum(); ++p) {
-            auto &periodRoute(*curSln.mutable_periodroutes(p));
-            for (ID v = 0; v < vehicleNum; ++v) {
-                Arr2D<Dvar> &xpv(x.at(p, v));
-                coords.clear();
-                fill(containNode.begin(), containNode.end(), false);
-                for (ID n = 0; n < nodeNum; ++n) {
-                    bool visited = false;
-                    for (ID m = 0; m < nodeNum; ++m) {
-                        if (n == m) { continue; }
-                        if (!e.isTrue(xpv.at(n, m))) { continue; }
-                        nodeIdMap[coords.size()] = n;
-                        containNode[n] = true;
-                        coords.push_back(lkh::Coord2D(nodes[n].x() * Precision, nodes[n].y() * Precision));
-                        visited = true;
-                        break;
-                    }
-                    nodeDiff += (visited ? (1 - degrees[p][v][n]) : degrees[p][v][n]);
-                }
-                auto &route(*periodRoute.mutable_vehicleroutes(v));
-                route.clear_deliveries();
-                if (coords.size() > 2) { // repair the relaxed solution.
-                    tspSolver.solve(tour, containNode, coords, [&](ID n) { return nodeIdMap[n]; });
-                } else if (coords.size() == 2) { // trivial cases.
-                    tour.nodes.resize(2);
-                    tour.nodes[0] = nodeIdMap[0];
-                    tour.nodes[1] = nodeIdMap[1];
-                } else {
-                    continue;
-                }
-                tour.nodes.push_back(tour.nodes.front());
-                for (auto n = tour.nodes.begin(), m = n + 1; m != tour.nodes.end(); ++n, ++m) {
-                    auto &d(*route.add_deliveries());
-                    d.set_node(*m);
-                    d.set_quantity(lround(e.getValue(delivery[p][v][*m])));
-                    curSln.totalCost += aux.routingCost.at(*n, *m);
-                }
-            }
-        }
-        e.addLazy(nodeDiff >= 1);
-
-        curSln.totalCost += e.getValue(holdingCost);
-        if (curSln.totalCost < sln.totalCost) {
-            Log(LogSwitch::Szx::Model) << "opt=" << curSln.totalCost << endl;
-            swap(curSln, sln);
-        }
-    };
-
-    mp.setMipSlnEvent(nodeSetHandler);
+    mp.setMipSlnEvent([&](MpSolver::MpEvent &e) {
+        fixSln(e); // OPTIMIZE[szx][5]: only call it when the gap is small?
+        rand.isPicked(1, 8) ? nodeSetHandler(e) : subTourHandler(e);
+    });
 
     // solve.
     if (mp.optimize()) {

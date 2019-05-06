@@ -212,6 +212,7 @@ protected:
     bool optimize(Solution &sln, ID workerId = 0); // optimize by a single worker.
 
     void iteratedModel(Solution &sln);
+    void iteratedModel(Solution &sln, List<bool> &isRoutePeriodFixed);
 
     void detectCollinearity();
     #pragma endregion Method
